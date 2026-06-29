@@ -1,0 +1,6 @@
+# Copia este archivo como terraform.tfvars y rellena tus valores:
+#   cp terraform.tfvars.example terraform.tfvars
+
+project_id = "tu-project-id-de-gcp"
+region     = "us-central1"
+zone       = "us-central1-a"
