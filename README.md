@@ -57,7 +57,7 @@ flowchart TD
 | Requisito del enunciado | Cómo se cumple |
 |---|---|
 | Punto de entrada único | Una sola `google_compute_global_address`; las VMs no tienen IP pública. |
-| Servicios en VMs independientes (aislamiento de fallos) | `google_compute_instance.principal` y `...contingencia` son recursos y máquinas distintas. Destruir una no afecta a la otra. |
+| Servicios en VMs independientes (aislamiento de fallos) | `google_compute_instance.principal` y `...contingencia` son recursos y máquinas distintas, además en **zonas distintas** (`zona_principal` / `zona_contingencia`). Destruir una no afecta a la otra. |
 | Control de tráfico por variables | `weighted_backend_services` en el `url_map` usa `var.peso_principal` y `var.peso_contingencia`. |
 | Automatización absoluta (sin SSH/consola) | `metadata_startup_script` instala nginx y publica la página en el arranque. |
 | Optimización de costos | VMs `e2-micro` (Free Tier), disco `pd-standard` de 10 GB. |
@@ -207,3 +207,21 @@ Coloca aquí las capturas / logs solicitados:
 - Discos `pd-standard` de 10 GB.
 - El balanceador y Cloud NAT tienen costo mínimo dentro del crédito de $300.
 - **Recuerda ejecutar `terraform destroy`** al finalizar.
+
+---
+
+## Solución de problemas
+
+**`does not have enough resources available` / `e2-micro ... is currently unavailable in the zone`**
+
+Es un *stockout* temporal de GCP: esa zona se quedó sin capacidad de `e2-micro` en
+ese momento. No es un error del código. Cada servicio ya usa una zona distinta
+(`zona_principal` = `us-central1-b`, `zona_contingencia` = `us-central1-c`) para
+minimizarlo. Si aún así ocurre, cambia la(s) zona(s) afectada(s) por otra de la misma
+región y vuelve a aplicar (no hace falta `destroy`):
+
+```bash
+terraform apply -var="zona_principal=us-central1-f" -var="zona_contingencia=us-central1-c"
+```
+
+Zonas válidas en `us-central1`: `a`, `b`, `c`, `f`.

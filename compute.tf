@@ -29,7 +29,7 @@ locals {
 resource "google_compute_instance" "principal" {
   name         = "${var.prefix}-vm-principal"
   machine_type = var.machine_type
-  zone         = var.zone
+  zone         = var.zona_principal
   tags         = ["http-backend"]
 
   boot_disk {
@@ -50,7 +50,7 @@ resource "google_compute_instance" "principal" {
 
 resource "google_compute_instance_group" "principal" {
   name      = "${var.prefix}-ig-principal"
-  zone      = var.zone
+  zone      = var.zona_principal
   instances = [google_compute_instance.principal.id]
 
   named_port {
@@ -63,7 +63,7 @@ resource "google_compute_instance_group" "principal" {
 resource "google_compute_instance" "contingencia" {
   name         = "${var.prefix}-vm-contingencia"
   machine_type = var.machine_type
-  zone         = var.zone
+  zone         = var.zona_contingencia
   tags         = ["http-backend"]
 
   boot_disk {
@@ -84,7 +84,7 @@ resource "google_compute_instance" "contingencia" {
 
 resource "google_compute_instance_group" "contingencia" {
   name      = "${var.prefix}-ig-contingencia"
-  zone      = var.zone
+  zone      = var.zona_contingencia
   instances = [google_compute_instance.contingencia.id]
 
   named_port {

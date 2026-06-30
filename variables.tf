@@ -10,10 +10,16 @@ variable "region" {
   default     = "us-central1"
 }
 
-variable "zone" {
-  description = "Zona donde viven las dos máquinas virtuales de backend."
+variable "zona_principal" {
+  description = "Zona de la VM del Servicio Principal."
   type        = string
-  default     = "us-central1-a"
+  default     = "us-central1-b"
+}
+
+variable "zona_contingencia" {
+  description = "Zona de la VM del Servicio de Contingencia. Se usa una zona DISTINTA a la principal para reforzar el aislamiento de fallos (dominios de fallo separados) y reducir el riesgo de que una falta de capacidad (stockout) en una sola zona bloquee todo el despliegue."
+  type        = string
+  default     = "us-central1-c"
 }
 
 variable "prefix" {
