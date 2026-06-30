@@ -215,13 +215,13 @@ Coloca aquí las capturas / logs solicitados:
 **`does not have enough resources available` / `e2-micro ... is currently unavailable in the zone`**
 
 Es un *stockout* temporal de GCP: esa zona se quedó sin capacidad de `e2-micro` en
-ese momento. No es un error del código. Cada servicio ya usa una zona distinta
-(`zona_principal` = `us-central1-b`, `zona_contingencia` = `us-central1-c`) para
+ese momento. No es un error del código. Cada servicio usa una zona distinta
+(`zona_principal` = `us-central1-b`, `zona_contingencia` = `us-central1-f`) para
 minimizarlo. Si aún así ocurre, cambia la(s) zona(s) afectada(s) por otra de la misma
 región y vuelve a aplicar (no hace falta `destroy`):
 
 ```bash
-terraform apply -var="zona_principal=us-central1-f" -var="zona_contingencia=us-central1-c"
+terraform apply -var="zona_principal=us-central1-a" -var="zona_contingencia=us-central1-c"
 ```
 
 Zonas válidas en `us-central1`: `a`, `b`, `c`, `f`.

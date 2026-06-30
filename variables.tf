@@ -19,7 +19,7 @@ variable "zona_principal" {
 variable "zona_contingencia" {
   description = "Zona de la VM del Servicio de Contingencia. Se usa una zona DISTINTA a la principal para reforzar el aislamiento de fallos (dominios de fallo separados) y reducir el riesgo de que una falta de capacidad (stockout) en una sola zona bloquee todo el despliegue."
   type        = string
-  default     = "us-central1-c"
+  default     = "us-central1-f"
 }
 
 variable "prefix" {
