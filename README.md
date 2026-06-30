@@ -225,3 +225,23 @@ terraform apply -var="zona_principal=us-central1-a" -var="zona_contingencia=us-c
 ```
 
 Zonas válidas en `us-central1`: `a`, `b`, `c`, `f`.
+
+> ⚠️ **Disclaimer — sincroniza la variable con la zona/región donde realmente se desplegó.**
+> Si por un *stockout* tuviste que desplegar una VM en una zona (o región) distinta a la
+> del `default` —por ejemplo pasando `-var="zona_contingencia=us-central1-b"` para que
+> funcionara—, **debes escribir ese mismo valor como `default` en `variables.tf`**.
+>
+> Si no lo haces, el siguiente `terraform apply` (aunque solo cambies los pesos)
+> detectará que *la zona configurada ≠ la zona realmente desplegada* e intentará
+> **recrear el instance group** en la zona del archivo. Como el backend service del
+> balanceador aún lo referencia, fallará con `resourceInUseByAnotherResource`, y la
+> única salida sería:
+>
+> ```bash
+> terraform destroy
+> terraform apply
+> ```
+>
+> **Regla simple:** la zona/región con la que lograste desplegar debe quedar escrita
+> como `default` en `variables.tf`, para poder hacer cambios posteriores (como los
+> pesos de los escenarios) sin recrear nada.

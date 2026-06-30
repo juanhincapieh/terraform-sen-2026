@@ -71,6 +71,12 @@ tráfico desde `variables.tf`, por eso editar esos defaults es la vía correcta.
 - **`project_id` es una variable con `default`** (`variables.tf`) apuntando al
   proyecto de entrega, para que `plan`/`apply` corran sin pedir input interactivo.
   Se puede sobrescribir con `-var="project_id=..."`, pero nunca debe quedar vacío.
+- **El `default` de `zona_principal`/`zona_contingencia` debe coincidir con la zona
+  realmente desplegada.** Si un *stockout* obligó a desplegar una VM en otra zona vía
+  `-var`, hay que persistir esa zona como `default` en `variables.tf`. Si la zona
+  configurada difiere de la desplegada, un `apply` posterior intenta recrear el
+  instance group (cambio de zona) y choca con `resourceInUseByAnotherResource` porque
+  el backend service lo referencia → tocaría `terraform destroy` + `apply`.
 
 ## 6. Comandos clave
 
