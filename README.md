@@ -202,12 +202,39 @@ Toma la captura de pantalla del `Destroy complete!` como evidencia de cierre.
 
 ## Evidencias
 
-Coloca aquí las capturas / logs solicitados:
+Capturas y logs de las pruebas, en la carpeta [`screenshots/`](screenshots/).
 
-- `docs/escenario-1.png` — IP pública mostrando el Servicio Principal.
-- `docs/escenario-2.png` — IP pública mostrando el Error 503.
-- `docs/escenario-3.png` — alternancia 50/50 (capturas o salida de `curl`).
-- `docs/destroy.png` — `terraform destroy` completado.
+### Escenario 1 — Producción Activa (100 / 0)
+
+IP pública mostrando el Servicio Principal:
+
+![Servicio Principal en el navegador](screenshots/escenario_1.png)
+
+Reparto verificado por `curl` (10/10 → Servicio Principal):
+
+![Logs curl escenario 1](screenshots/escenario_1_logs.png)
+
+### Escenario 2 — Mantenimiento Total (0 / 100)
+
+IP pública mostrando la página de Error 503:
+
+![Error 503 en el navegador](screenshots/escenario_2.png)
+
+Reparto verificado por `curl` (todo → Mantenimiento Programado):
+
+![Logs curl escenario 2](screenshots/escenario_2_logs.png)
+
+### Escenario 3 — Balance equitativo (50 / 50)
+
+Alternancia entre ambos servicios verificada por `curl`:
+
+![Logs curl escenario 3 con alternancia 50/50](screenshots/escenario_3_logs.png)
+
+### Cierre — `terraform destroy`
+
+`Destroy complete! Resources: 18 destroyed.`
+
+![terraform destroy completado](screenshots/terraform_destroy.png)
 
 ---
 
