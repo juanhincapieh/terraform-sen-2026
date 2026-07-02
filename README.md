@@ -60,7 +60,7 @@ flowchart TD
 | Servicios en VMs independientes (aislamiento de fallos) | `google_compute_instance.principal` y `...contingencia` son recursos y máquinas distintas, además en **zonas distintas** (`zona_principal` / `zona_contingencia`). Destruir una no afecta a la otra. |
 | Control de tráfico por variables | `weighted_backend_services` en el `url_map` usa `var.peso_principal` y `var.peso_contingencia`. |
 | Automatización absoluta (sin SSH/consola) | `metadata_startup_script` instala nginx y publica la página en el arranque. |
-| Optimización de costos | VMs `e2-micro` (Free Tier), disco `pd-standard` de 10 GB. |
+| Optimización de costos | VMs `e2-medium` (cubiertas por el crédito de $300), disco `pd-standard` de 10 GB y `terraform destroy` al finalizar. |
 | IP interna oculta | VMs sin IP pública; salida a internet por Cloud NAT. |
 
 > **Tipo de balanceador:** se usa el **Application Load Balancer externo global**
@@ -75,7 +75,8 @@ flowchart TD
 | Archivo | Contenido |
 |---|---|
 | `providers.tf` | Provider de Google y versiones requeridas. |
-| `variables.tf` | Todas las variables (con defaults): `project_id`, región/zona y los pesos de tráfico. |
+| `variables.tf` | Declaración de todas las variables (con defaults de respaldo): `project_id`, región/zona y los pesos de tráfico. |
+| `terraform.tfvars` | **Valores efectivos** de las variables (versionado). Aquí se cambian los pesos de cada escenario. |
 | `services.tf` | Habilita la API de Compute Engine (despliegue desde cero). |
 | `network.tf` | VPC, subred, subred proxy-only, firewall, Cloud Router + NAT. |
 | `compute.tf` | Las 2 VMs independientes + sus instance groups + startup scripts. |
@@ -92,15 +93,24 @@ flowchart TD
    ```bash
    gcloud auth application-default login
    ```
+   Tras el login, gcloud suele mostrar el aviso
+   `Cannot find a quota project to add to ADC`. Fija el proyecto de cuota para
+   evitar errores de `quota exceeded` / `API not enabled` al aplicar:
+   ```bash
+   gcloud auth application-default set-quota-project terraform-sen-2026
+   ```
+   (Reemplaza `terraform-sen-2026` por tu `project_id` si usas otro proyecto.)
 3. Un **proyecto de GCP** con facturación activa (los $300 de crédito gratuito bastan).
 
 ---
 
 ## Cómo desplegar
 
-El `project_id` (y la región/zona) ya vienen como **valores por defecto** en
-`variables.tf`, así que **no hace falta crear ningún `terraform.tfvars`**: el
-despliegue funciona con un solo `terraform apply`.
+Los valores de todas las variables (`project_id`, región, zonas, `machine_type` y
+los pesos) están en **`terraform.tfvars`**, que ya viene versionado en el repo. No
+hace falta crear ni editar ningún archivo `.tf`: el despliegue funciona con un solo
+`terraform apply`. (`variables.tf` mantiene un `default` de respaldo por variable,
+pero los valores efectivos son los de `terraform.tfvars`, que tiene mayor precedencia.)
 
 ```bash
 terraform init      # obligatorio una vez (descarga el provider de Google)
@@ -120,8 +130,8 @@ VMs instalen nginx y el balanceador propague la configuración; luego abre
 ## Los 3 escenarios de evaluación
 
 Para cambiar de escenario **solo se modifican `peso_principal` y `peso_contingencia`**
-(sus `default`) en `variables.tf` y se vuelve a ejecutar `terraform apply`. El
-enunciado permite explícitamente parametrizar el tráfico desde `variables.tf`.
+en **`terraform.tfvars`** y se vuelve a ejecutar `terraform apply`. El enunciado
+permite explícitamente parametrizar el tráfico desde variables.
 
 ### Escenario 1 — Producción Activa (100% / 0%)
 ```hcl
@@ -166,11 +176,11 @@ gcloud projects add-iam-policy-binding TU_PROJECT_ID \
   --role="roles/editor"
 ```
 
-> El `project_id` está parametrizado como variable y ya trae como `default` el
+> El `project_id` está definido en `terraform.tfvars` (versionado) apuntando al
 > proyecto de entrega, así que el profesor puede ejecutar el repositorio
-> **sin modificar ningún archivo `.tf` ni crear un `terraform.tfvars`**: basta
-> con `terraform init && terraform apply`. (Si quisiera otro proyecto, podría
-> sobrescribirlo puntualmente con `terraform apply -var="project_id=otro"`.)
+> **sin editar ningún archivo**: basta con `terraform init && terraform apply`.
+> (Si quisiera otro proyecto, cambia el `project_id` en `terraform.tfvars` o lo
+> sobrescribe puntualmente con `terraform apply -var="project_id=otro"`.)
 >
 > **Nota de seguridad:** una vez publicada la nota podrás revocar el acceso con
 > `gcloud projects remove-iam-policy-binding ...` o desde la consola de IAM.
@@ -203,7 +213,7 @@ Coloca aquí las capturas / logs solicitados:
 
 ## Notas de costo
 
-- VMs `e2-micro` (las más pequeñas, elegibles para Free Tier en `us-central1`).
+- VMs `e2-medium` (2 vCPU / 4 GB). No son Free Tier; el costo se cubre con el crédito de $300.
 - Discos `pd-standard` de 10 GB.
 - El balanceador y Cloud NAT tienen costo mínimo dentro del crédito de $300.
 - **Recuerda ejecutar `terraform destroy`** al finalizar.
@@ -212,9 +222,9 @@ Coloca aquí las capturas / logs solicitados:
 
 ## Solución de problemas
 
-**`does not have enough resources available` / `e2-micro ... is currently unavailable in the zone`**
+**`does not have enough resources available` / `e2-medium ... is currently unavailable in the zone`**
 
-Es un *stockout* temporal de GCP: esa zona se quedó sin capacidad de `e2-micro` en
+Es un *stockout* temporal de GCP: esa zona se quedó sin capacidad de `e2-medium` en
 ese momento. No es un error del código. Cada servicio usa una zona distinta
 (`zona_principal` = `us-central1-b`, `zona_contingencia` = `us-central1-f`) para
 minimizarlo. Si aún así ocurre, cambia la(s) zona(s) afectada(s) por otra de la misma
@@ -228,8 +238,8 @@ Zonas válidas en `us-central1`: `a`, `b`, `c`, `f`.
 
 > ⚠️ **Disclaimer — sincroniza la variable con la zona/región donde realmente se desplegó.**
 > Si por un *stockout* tuviste que desplegar una VM en una zona (o región) distinta a la
-> del `default` —por ejemplo pasando `-var="zona_contingencia=us-central1-b"` para que
-> funcionara—, **debes escribir ese mismo valor como `default` en `variables.tf`**.
+> configurada —por ejemplo pasando `-var="zona_contingencia=us-central1-b"` para que
+> funcionara—, **debes escribir ese mismo valor en `terraform.tfvars`**.
 >
 > Si no lo haces, el siguiente `terraform apply` (aunque solo cambies los pesos)
 > detectará que *la zona configurada ≠ la zona realmente desplegada* e intentará
@@ -243,5 +253,5 @@ Zonas válidas en `us-central1`: `a`, `b`, `c`, `f`.
 > ```
 >
 > **Regla simple:** la zona/región con la que lograste desplegar debe quedar escrita
-> como `default` en `variables.tf`, para poder hacer cambios posteriores (como los
-> pesos de los escenarios) sin recrear nada.
+> en `terraform.tfvars`, para poder hacer cambios posteriores (como los pesos de los
+> escenarios) sin recrear nada.
