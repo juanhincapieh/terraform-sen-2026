@@ -9,10 +9,6 @@
 crash.log
 crash.*.log
 
-# Archivos .tfvars (suelen contener datos sensibles)
-*.tfvars
-*.tfvars.json
-
 # Archivos de override
 override.tf
 override.tf.json
